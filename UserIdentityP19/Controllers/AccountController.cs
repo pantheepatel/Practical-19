@@ -27,6 +27,12 @@ namespace UserIdentityP19.Controllers
             return View();
         }
 
+        [HttpGet]
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
+
         // registration
         [HttpGet]
         public IActionResult Register()
@@ -88,24 +94,39 @@ namespace UserIdentityP19.Controllers
 
                 if (result.Succeeded)
                 {
-                    return RedirectToAction("Index", "Home");
+                    var user = await _userManager.FindByEmailAsync(model.Email);
+                    var roles = await _userManager.GetRolesAsync(user);
+
+                    if (roles.Contains("Admin"))
+                    {
+                        return RedirectToAction("Index", "Admin");
+                    }
+                    else if (roles.Contains("User"))
+                    {
+                        return RedirectToAction("Index", "Student");
+                    }
+                    else
+                    {
+                        // Default fallback
+                        return RedirectToAction("Index", "Home");
+                    }
                 }
+
                 if (result.IsLockedOut)
                 {
                     ModelState.AddModelError(string.Empty, "Account locked out. Please try again later.");
                     return View(model);
                 }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                    return View(model);
-                }
+
+                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                return View(model);
             }
 
-            // If we got this far, something failed, redisplay form
+            // Something failed, redisplay form
             return View(model);
         }
-        
+
+
         // logout
         public async Task<IActionResult> Logout()
         {

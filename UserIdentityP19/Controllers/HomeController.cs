@@ -5,7 +5,7 @@ using UserIdentityP19.Models;
 
 namespace UserIdentityP19.Controllers
 {
-    [Authorize(Roles = "Admin,User")]
+    //[Authorize(Roles = "Admin,User")]
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;

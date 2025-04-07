@@ -2,11 +2,19 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using UserIdentityP19.Models;
 using UserIdentityP19;
+using UserIdentityP19.Mapping;
+using UserIdentityP19.Repository.AuthRepo;
+using UserIdentityP19.Repository.StudentRepo;
+using AutoMapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IStudentRepository, StudentRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 builder.Services.AddIdentity<User, Role>()
     .AddEntityFrameworkStores<AppDbContext>()
@@ -14,6 +22,10 @@ builder.Services.AddIdentity<User, Role>()
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.AccessDeniedPath = "/Account/AccessDenied";
+});
 
 var app = builder.Build();
 
