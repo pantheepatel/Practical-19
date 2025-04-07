@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using UserIdentityP19.Models;
 
@@ -9,14 +9,17 @@ namespace UserIdentityP19.Controllers
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
         private readonly RoleManager<Role> _roleManager;
+        private readonly ILogger<AccountController> _logger;
         public AccountController(
         UserManager<User> userManager,
         SignInManager<User> signInManager,
-        RoleManager<Role> roleManager)
+        RoleManager<Role> roleManager,
+        ILogger<AccountController> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
+            _logger = logger;
         }
 
         public IActionResult Index()
@@ -71,18 +74,38 @@ namespace UserIdentityP19.Controllers
         {
             return View();
         }
-
         [HttpPost]
-        public async Task<IActionResult> Login(string email, string password)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
         {
-            var result = await _signInManager.PasswordSignInAsync(email, password, false, false);
-            if (result.Succeeded)
-                return RedirectToAction("Index", "Home");
+            if (ModelState.IsValid)
+            {
+                var result = await _signInManager.PasswordSignInAsync(
+                    model.Email,
+                    model.Password,
+                    model.RememberMe,
+                    lockoutOnFailure: true);
 
-            ModelState.AddModelError("", "Invalid login attempt.");
-            return RedirectToAction("Index", "Home");
+                if (result.Succeeded)
+                {
+                    return RedirectToAction("Index", "Home");
+                }
+                if (result.IsLockedOut)
+                {
+                    ModelState.AddModelError(string.Empty, "Account locked out. Please try again later.");
+                    return View(model);
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                    return View(model);
+                }
+            }
+
+            // If we got this far, something failed, redisplay form
+            return View(model);
         }
-
+        
         // logout
         public async Task<IActionResult> Logout()
         {

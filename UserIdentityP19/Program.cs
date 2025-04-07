@@ -17,6 +17,17 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var dbContext = services.GetRequiredService<AppDbContext>();
+    var roleManager = services.GetRequiredService<RoleManager<Role>>();
+    var userManager = services.GetRequiredService<UserManager<User>>();
+
+    dbContext.Database.Migrate(); // Ensure the latest migration is applied
+    SeedRolesAsync(roleManager, userManager).GetAwaiter().GetResult();
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -34,24 +45,24 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Account}/{action=Login}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
-
-using (var scope = app.Services.CreateScope())
+async Task SeedRolesAsync(RoleManager<Role> roleManager, UserManager<User> userManager)
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+    string[] roleNames = { "Admin", "User" };
 
-    string[] roles = { "Admin", "User" };
-    foreach (var role in roles)
+    foreach (var roleName in roleNames)
     {
-        if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new Role { Name = role });
+        if (!await roleManager.RoleExistsAsync(roleName))
+        {
+            var role = new Role { Name = roleName };
+            await roleManager.CreateAsync(role);
+        }
     }
 
-    // Create default admin
-    string adminEmail = "admin@example.com";
+    // Ensure an Admin user exists (Optional)
+    var adminEmail = "admin@gmail.com";
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)
     {
@@ -59,13 +70,15 @@ using (var scope = app.Services.CreateScope())
         {
             UserName = adminEmail,
             Email = adminEmail,
-            FirstName = "Super",
-            LastName = "Admin",
-            MobileNumber = "9999999999"
+            FirstName = "Admin",
+            LastName = "User",
+            MobileNumber = "1234567890"
         };
+
         var result = await userManager.CreateAsync(newAdmin, "Admin@123");
         if (result.Succeeded)
+        {
             await userManager.AddToRoleAsync(newAdmin, "Admin");
+        }
     }
 }
-
