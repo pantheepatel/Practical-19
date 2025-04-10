@@ -1,6 +1,6 @@
 # Practical 19: ASP.NET Identity(Authentication and Authorization)
 
-This project demonstrates the implementation of CRUD operations.
+This project demonstrates the implementation of authorizing and controlling access and view of functions based on the role of the accessing user.
 
 ## Configuration
 
