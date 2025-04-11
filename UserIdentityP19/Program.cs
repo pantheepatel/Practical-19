@@ -1,24 +1,21 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using UserIdentityP19.Models;
-using UserIdentityP19;
 using UserIdentityP19.Mapping;
-using UserIdentityP19.Repository.AuthRepo;
 using UserIdentityP19.Repository.StudentRepo;
 using AutoMapper;
+using UserIdentityP19.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddScoped<IStudentRepository, StudentRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
-
 builder.Services.AddIdentity<User, Role>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
+
+builder.Services.AddScoped<IStudentRepository, StudentRepository>();
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -37,7 +34,7 @@ using (var scope = app.Services.CreateScope())
     var userManager = services.GetRequiredService<UserManager<User>>();
 
     dbContext.Database.Migrate(); // Ensure the latest migration is applied
-    SeedRolesAsync(roleManager, userManager).GetAwaiter().GetResult();
+    SeedData.InitializeAsync(roleManager, userManager).GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.
@@ -60,37 +57,3 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
-async Task SeedRolesAsync(RoleManager<Role> roleManager, UserManager<User> userManager)
-{
-    string[] roleNames = { "Admin", "User" };
-
-    foreach (var roleName in roleNames)
-    {
-        if (!await roleManager.RoleExistsAsync(roleName))
-        {
-            var role = new Role { Name = roleName };
-            await roleManager.CreateAsync(role);
-        }
-    }
-
-    // Ensure an Admin user exists (Optional)
-    var adminEmail = "admin@gmail.com";
-    var adminUser = await userManager.FindByEmailAsync(adminEmail);
-    if (adminUser == null)
-    {
-        var newAdmin = new User
-        {
-            UserName = adminEmail,
-            Email = adminEmail,
-            FirstName = "Admin",
-            LastName = "User",
-            MobileNumber = "1234567890"
-        };
-
-        var result = await userManager.CreateAsync(newAdmin, "Admin@123");
-        if (result.Succeeded)
-        {
-            await userManager.AddToRoleAsync(newAdmin, "Admin");
-        }
-    }
-}

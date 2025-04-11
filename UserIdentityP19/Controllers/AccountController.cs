@@ -4,23 +4,13 @@ using UserIdentityP19.Models;
 
 namespace UserIdentityP19.Controllers
 {
-    public class AccountController : Controller
+    public class AccountController(
+            UserManager<User> _userManager,
+            SignInManager<User> _signInManager,
+            RoleManager<Role> _roleManager,
+            ILogger<AccountController> _logger
+        ) : Controller
     {
-        private readonly UserManager<User> _userManager;
-        private readonly SignInManager<User> _signInManager;
-        private readonly RoleManager<Role> _roleManager;
-        private readonly ILogger<AccountController> _logger;
-        public AccountController(
-        UserManager<User> userManager,
-        SignInManager<User> signInManager,
-        RoleManager<Role> roleManager,
-        ILogger<AccountController> logger)
-        {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _roleManager = roleManager;
-            _logger = logger;
-        }
 
         public IActionResult Index()
         {
